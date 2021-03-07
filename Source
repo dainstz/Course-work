@@ -1,0 +1,227 @@
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<ctype.h>
+#include<Windows.h>
+
+//Дефиниране на функциите
+void cycleOperatorsCounter(FILE* inputStream, FILE* outputStream);
+void counter(FILE* inputStream, FILE* outputStream);
+int fileToFile(void);
+int fileToScreen(void);
+int screenToFile(void);
+int screenToScreen(void);
+void getFileName(char* fileName, int mode);
+
+//Интерфейс
+int menu() {
+	int i;
+	SetConsoleOutputCP(1251);
+	printf(" _____________________________________\n");
+	printf("|                                    |\n");
+	printf("|   1. ФАЙЛ ДО ФАЙЛ                  |\n");
+	printf("|   2. ФАЙЛ ДО ЕКРАН                 |\n");
+	printf("|   3. КЛАВИЕТУРА ДО ФАЙЛ            |\n");
+	printf("|   4. КЛАВИЕТУРА ДО ЕКРАН           |\n");
+	printf("|   0. ИЗХОД                         |\n");
+	printf("|____________________________________|\n");
+	do {
+		printf("ИЗБЕРЕТЕ ОПЦИЯ: ");
+		fflush(stdin);
+		scanf("%i", &i);
+	} while (i < 0 || i> 4);
+
+	return i;
+}
+
+//Главна функция, switch-case scenario
+int main(void) {
+
+	while (1) {
+		system("cls");
+		switch (menu()) {
+		case 1: fileToFile();
+			break;
+		case 2: fileToScreen();
+			break;
+		case 3: screenToFile();
+			break;
+		case 4: screenToScreen();
+			break;
+		default:
+			return 0;
+		}
+		system("pause");
+	}
+}
+
+//Достъпване до файловете(работа с файлове)
+void getFileName(char* fileName, int mode) {
+	while (1) {
+		fflush(stdin);
+		if (mode == 1) {
+			printf("Input file name(.C): ");
+			gets(fileName);
+
+			if (fileName[strlen(fileName) - 2] == '.' && toupper(fileName[strlen(fileName) - 1]) == 'C') {
+				return;
+			}
+		}
+		else {
+			printf("Output File: ");
+			gets(fileName);
+			return;
+		}
+	}
+}
+
+int fileToFile(void) {
+	char inputFileName[256], outputFileName[256];
+	FILE *inputStream, *outputStream;
+
+	getFileName(inputFileName, 1);
+	if (!(inputStream = fopen(inputFileName, "r"))) {
+		fprintf(stderr, "Error opening file!\n");
+		return -1;
+	}
+
+	getFileName(outputFileName, 2);
+	if (!(outputStream = fopen(outputFileName, "w"))) {
+		fprintf(stderr, "Error opening file!\a\n");
+		return -1;
+	}
+
+	cycleOperatorsCounter(inputStream, outputStream);
+	rewind(inputStream);
+	counter(inputStream, outputStream);
+	fclose(inputStream);
+	fclose(outputStream);
+
+	printf("Results saved to \"%s\".\n", outputFileName);
+	return 0;
+}
+
+//Принтиране от файл
+int fileToScreen(void) {
+	char inputFileName[256];
+	FILE* inputStream;
+
+	getFileName(inputFileName, 1);
+	if (!(inputStream = fopen(inputFileName, "r"))) {
+		fprintf(stderr, "Грешка при отваряне на файл!\n");
+		return -1;
+	}
+
+	cycleOperatorsCounter(inputStream, stdout);
+	rewind(inputStream);
+	counter(inputStream, stdout);
+	fclose(inputStream);
+
+	return 0;
+}
+
+//Принтиране във файл
+int screenToFile(void) {
+	char outputFileName[256];
+	FILE *outputStream, *tempStream;
+	char str[999];
+
+	tempStream = fopen("temp.tmp", "w");
+	fflush(stdin);
+	printf("Напишете \"KRAI\" на нов ред, когато въведете текста\n");
+	while (1) {
+		gets(str);
+		if (!strcmp(str, "KRAI")) 
+		{
+			fclose(tempStream);
+			tempStream = fopen("temp.tmp", "r");
+			break;
+		}
+		fprintf(tempStream, "%s\n", str);
+	}
+
+	getFileName(outputFileName, 2);
+	if (!(outputStream = fopen(outputFileName, "w"))) {
+		fprintf(stderr, "Error opening file!\a\n");
+		return -1;
+	}
+
+	cycleOperatorsCounter(tempStream, outputStream);
+	rewind(tempStream);
+	counter(tempStream, outputStream);
+	fclose(tempStream);
+	fclose(outputStream);
+
+	printf("Results saved to \"%s\".\n", outputFileName);
+	return 0;
+}
+
+int screenToScreen(void) {
+	FILE *tempStream;
+	char str[999];
+
+	tempStream = fopen("temp.tmp", "w");
+	fflush(stdin);
+	printf("Напишете \"KRAI\" на нов ред, когато въведете текста\n");
+	while (1) {
+		gets(str);
+		if (!strcmp(str, "KRAI")) {
+			fclose(tempStream);
+			tempStream = fopen("temp.tmp", "r");
+			break;
+		}
+		fprintf(tempStream, "%s\n", str);
+	}
+
+	cycleOperatorsCounter(tempStream, stdout);
+	rewind(tempStream);
+	counter(tempStream, stdout);
+	fclose(tempStream);
+
+	return 0;
+}
+//Функция за препрояване на операторите в текст.
+void cycleOperatorsCounter(FILE* inputStream, FILE* outputStream) {
+	char str[1000];
+	int cycleCounter = 0;
+	unsigned i;
+
+	
+	while (fgets(str, sizeof(str), inputStream) != NULL) {
+		for (i = 0; i < strlen(str); i++) {
+			if ((str[i - 1] == ' ' || str[i - 1] == '\n'  || str[i - 1] == '\t' || i == 0) && (str[i] == 'f') && (str[i + 1] == 'o') && (str[i + 2] == 'r') && (str[i + 3] == ' ' || str[i + 3] == '\n' || str[i + 3] == '\t' || str[i+3]=='(' || str[i+3]==')')) {
+				cycleCounter++;
+			}
+			if ((str[i - 1] == ' ' || str[i - 1] == '\n' ||  str[i - 1] == '\t' || i == 0)
+				&& (str[i] == 'w') && (str[i + 1] == 'h') && (str[i + 2] == 'i') && (str[i + 3] == 'l') && (str[i + 4] == 'e')
+				&& (str[i + 5] == ' ' || str[i + 5] == '\n' || str[i + 5] == '\t' || str[i+5]=='('|| str[i+5]==')')) {
+				cycleCounter++;
+			}
+		}
+	}
+	fprintf(outputStream, "Броят на операторите за цикъл е: %d\n", cycleCounter);
+
+}
+
+void counter(FILE* inputStream, FILE* outputStream) {
+	char str[1000];
+	int Counter = 0;
+	unsigned i;
+
+	
+	while (fgets(str, sizeof(str), inputStream) != NULL) {
+		for (i = 0; i < strlen(str); i++) 
+		{   
+			if (str[i] == '/' ||str [i+1]=='/'||str[i]=='/*' ||str[i]=='"') break;
+			else if (str[i] == '='&&str[i+1]!='='&&str[i -1 ] != '=')
+                    {
+					Counter++;
+			}
+		}
+	}
+	fprintf(outputStream, "Броят на операторите за присвояване е: %d\n", Counter);
+
+}
